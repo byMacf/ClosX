@@ -25,25 +25,22 @@ G = nx.Graph()
 
 def build_five_tier_clos(graph, nodes=nodes, edges=edges, image_name='5tier_clos.png'):
     nodes['spine_list'] = ['s1-r' + str(node + 1) for node in range(int(args.spine_size))]
-    nodes['t4_list'] = ['t4-r' + str(node + 1) for node in range(int(args.t4_size))]
-    nodes['t3_list'] = ['t3-r' + str(node + 1) for node in range(int(args.t3_size))]
-    nodes['t2_list'] = ['t2-r' + str(node + 1) for node in range(int(args.t2_size))]
-    nodes['t1_list'] = ['t1-r' + str(node + 1) for node in range(int(args.t1_size))]
+    nodes['tier4_list'] = ['t4-r' + str(node + 1) for node in range(int(args.t4_size))]
+    nodes['tier3_list'] = ['t3-r' + str(node + 1) for node in range(int(args.t3_size))]
+    nodes['tier2_list'] = ['t2-r' + str(node + 1) for node in range(int(args.t2_size))]
+    nodes['tier1_list'] = ['t1-r' + str(node + 1) for node in range(int(args.t1_size))]
 
-    G.add_nodes_from(nodes['spine_list'])
-    G.add_nodes_from(nodes['t4_list'])
-    G.add_nodes_from(nodes['t3_list'])
-    G.add_nodes_from(nodes['t2_list'])
-    G.add_nodes_from(nodes['t1_list'])
+    for node_lists, values in nodes.items():
+        G.add_nodes_from(values)
 
     for spine_router in nodes['spine_list']:
-        for t4_router in nodes['t4_list']:
+        for t4_router in nodes['tier4_list']:
             edges.append((spine_router, t4_router))
-            for t3_router in nodes['t3_list']:
+            for t3_router in nodes['tier3_list']:
                 edges.append((t4_router, t3_router))
-                for t2_router in nodes['t2_list']:
+                for t2_router in nodes['tier2_list']:
                     edges.append((t3_router, t2_router))
-                    for t1_router in nodes['t1_list']:
+                    for t1_router in nodes['tier1_list']:
                         edges.append((t2_router, t1_router))
     
     G.add_edges_from(edges)
@@ -54,17 +51,17 @@ def build_five_tier_clos(graph, nodes=nodes, edges=edges, image_name='5tier_clos
 
 def build_three_tier_clos(graph, nodes=nodes, edges=edges, image_name='3tier_clos.png'):
     nodes['spine_list'] = ['s1-r' + str(node + 1) for node in range(int(args.spine_size))]
-    nodes['t2_list'] = ['t2-r' + str(node + 1) for node in range(int(args.t2_size))]
-    nodes['t1_list'] = ['t1-r' + str(node + 1) for node in range(int(args.t1_size))]
+    nodes['tier2_list'] = ['t2-r' + str(node + 1) for node in range(int(args.t2_size))]
+    nodes['tier1_list'] = ['t1-r' + str(node + 1) for node in range(int(args.t1_size))]
 
-    G.add_nodes_from(nodes['spine_list'])
-    G.add_nodes_from(nodes['t2_list'])
-    G.add_nodes_from(nodes['t1_list'])
+    for node_lists, values in nodes.items():
+        if values:
+            G.add_nodes_from(values)
 
     for spine_router in nodes['spine_list']:
-        for t2_router in nodes['t2_list']:
+        for t2_router in nodes['tier2_list']:
             edges.append((spine_router, t2_router))
-            for t1_router in nodes['t1_list']:
+            for t1_router in nodes['tier1_list']:
                 edges.append((t2_router, t1_router))
     
     G.add_edges_from(edges)
