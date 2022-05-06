@@ -11,15 +11,8 @@ parser.add_argument('-t2', action="store", dest="t2_size")
 parser.add_argument('-t1', action="store", dest="t1_size")
 args = parser.parse_args()
 
-nodes = {
-    'spine_list': [],
-    'tier4_list': [],
-    'tier3_list': [],
-    'tier2_list': [],
-    'tier1_list': [],
-}
+nodes = {}
 edges = []
-clos_image = 'clos.png'
 
 G = nx.Graph()
 
