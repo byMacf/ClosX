@@ -17,7 +17,7 @@
 ```
 
 ## 5 Tier Clos Example
-![5 Tier Clos](https://github.com/m4cfarlane/ClosX/blob/main/5tier_clos.png?raw=true)
+![5 Tier Clos](https://github.com/byMacf/ClosX/blob/main/5tier_clos.png?raw=true)
 
 ## 3 Tier CLOS Example
-![3 Tier Clos](https://github.com/m4cfarlane/ClosX/blob/main/3tier_clos.png?raw=true)
+![3 Tier Clos](https://github.com/byMacf/ClosX/blob/main/3tier_clos.png?raw=true)
