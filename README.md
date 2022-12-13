@@ -3,10 +3,10 @@
 ## Command Line Operation
 ```
   5 Tier Clos
-  $ python3 closgen.py -t 5 -s 4 -t4 8 -t3 12 -t2 16 -t1 20
+  $ python3 closx.py -t 5 -s 4 -t4 8 -t3 12 -t2 16 -t1 20
 
   3 Tier Clos
-  $ python3 closgen.py -t 3 -s 8 -t2 16 -t1 16
+  $ python3 closx.py -t 3 -s 8 -t2 16 -t1 16
 
     -t: number of tiers
     -s: size of spine
