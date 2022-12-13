@@ -2,7 +2,7 @@ import argparse
 import networkx as nx
 import matplotlib.pyplot as plot
 
-parser = argparse.ArgumentParser(description='CLOS Fabric Generator')
+parser = argparse.ArgumentParser(description='Clos Fabric Generator')
 parser.add_argument('-t', action="store", dest="tiers")
 parser.add_argument('-s', action="store", dest="spine_size")
 parser.add_argument('-t4', action="store", dest="t4_size")
@@ -64,6 +64,6 @@ def build_three_tier_clos(graph, nodes=nodes, edges=edges, image_name='3tier_clo
     return image_name
 
 if args.tiers == '5':
-    print(f'{args.tiers} tier CLOS Built, saved as {build_five_tier_clos(G)}')
+    print(f'{args.tiers} tier Clos Built, saved as {build_five_tier_clos(G)}')
 elif args.tiers == '3':
-    print(f'{args.tiers} tier CLOS Built, saved as {build_three_tier_clos(G)}')
+    print(f'{args.tiers} tier Clos Built, saved as {build_three_tier_clos(G)}')

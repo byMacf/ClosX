@@ -1,11 +1,11 @@
-# CLOSFabricGenerator
+# ClosX
 
 ## Command Line Operation
 ```
-  5 Tier CLOS
+  5 Tier Clos
   $ python3 closgen.py -t 5 -s 4 -t4 8 -t3 12 -t2 16 -t1 20
 
-  3 Tier CLOS
+  3 Tier Clos
   $ python3 closgen.py -t 3 -s 8 -t2 16 -t1 16
 
     -t: number of tiers
@@ -16,8 +16,8 @@
     -t1: size of tier 1
 ```
 
-## 5 Tier CLOS Example
-![5 Tier CLOS](https://github.com/m4cfarlane/CLOSFabricGenerator/blob/main/5tier_clos.png?raw=true)
+## 5 Tier Clos Example
+![5 Tier Clos](https://github.com/m4cfarlane/ClosX/blob/main/5tier_clos.png?raw=true)
 
 ## 3 Tier CLOS Example
-![3 Tier CLOS](https://github.com/m4cfarlane/CLOSFabricGenerator/blob/main/3tier_clos.png?raw=true)
+![3 Tier Clos](https://github.com/m4cfarlane/ClosX/blob/main/3tier_clos.png?raw=true)
