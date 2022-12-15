@@ -1,0 +1,55 @@
+system {
+    host-name {{ hostname }};
+    root-authentication {
+	    plain-text-password-value "Juniper1";
+    }
+    login {
+        user neteng {
+            uid 2000;
+            class super-user;
+            authentication {
+                plain-text-password-value "Juniper1";
+            }
+        }
+    }
+    services {
+        ssh;
+        netconf {
+            ssh;
+        }
+    }
+}
+interfaces {
+    lo0 {
+        unit 0 {
+            family inet {
+                address {{ mgmt_ip }}/32;
+            }
+        }
+    }
+{% for interface_index, interface_data in interfaces.items() %}
+    ge-0/0/{% if hostname == interface_data['a_end'] %}{{ interface_data['a_end_index'] }}{% else %}{{ interface_data['b_end_index'] }}{% endif %} {
+        description "{{ hostname }} ge-0/0/{% if hostname == interface_data['a_end'] %}{{ interface_data['a_end_index'] }}{% else %}{{ interface_data['b_end_index'] }}{% endif %} <--> ge-0/0/{% if hostname == interface_data['a_end'] %}{{ interface_data['b_end_index'] }} {{ interface_data['b_end'] }}{% else %}{{ interface_data['a_end_index'] }} {{ interface_data['a_end'] }}{% endif %}";
+        unit 0 {
+            family inet {
+                address {% if hostname == interface_data['a_end'] %}{{ interface_data['a_end_ip'] }}{% else %}{{ interface_data['b_end_ip'] }}{% endif %}/31;
+            }
+        }
+    }
+{% endfor %}
+}
+protocols {
+    ospf {
+        area 0.0.0.0 {
+            {% for interface_index, interface_data in interfaces.items() %}
+            interface ge-0/0/{% if hostname == interface_data['a_end'] %}{{ interface_data['a_end_index'] }}{% else %}{{ interface_data['b_end_index'] }}{% endif %}.0;
+            {% endfor %}
+            interface lo0.0 {
+                passive;
+            }
+        }
+    }
+    lldp {
+        interface all;
+    }
+}

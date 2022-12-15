@@ -1,0 +1,107 @@
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+no service password-recovery
+!
+hostname {{ hostname }}
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+no ip domain lookup
+ip domain name yourdomain.com
+ip cef
+no ipv6 cef
+!
+!
+!
+!
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+cts logging verbose
+license udi pid C897VA-K9 sn FCZ202990B6
+!
+!
+username neteng privilege 15 secret Cisco1
+!
+!
+!
+!
+!
+ip ssh version 2
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address {{ mgmt_ip }} 255.255.255.255
+!
+{% for interface_index, interface_data in interfaces.items() %}
+interface GigabitEthernet{% if hostname == interface_data['a_end'] %}{{ interface_data['a_end_index'] }}{% else %}{{ interface_data['b_end_index'] }}{% endif %}
+ description "{{ hostname }} GigabitEthernet{% if hostname == interface_data['a_end'] %}{{ interface_data['a_end_index'] }}{% else %}{{ interface_data['b_end_index'] }}{% endif %} <-->  GigabitEthernet{% if hostname == interface_data['a_end'] %}{{ interface_data['b_end_index'] }} {{ interface_data['b_end'] }}{% else %}{{ interface_data['a_end_index'] }} {{ interface_data['a_end'] }}{% endif %}"
+ ip address {% if hostname == interface_data['a_end'] %}{{ interface_data['a_end_ip'] }}{% else %}{{ interface_data['b_end_ip'] }}{% endif %} 255.255.255.254
+ duplex auto
+ speed auto
+ no shut
+!
+{% endfor %}
+interface Vlan1
+ no ip address
+!
+router ospf 1
+ router-id {{ mgmt_ip }}
+ passive-interface Loopback0
+ {% for interface_index, interface_data in interfaces.items() %}
+ network {{ interface_data['a_end_ip'] }} 0.0.0.1 area 0
+ {% endfor %}
+!
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ login local
+ no modem enable
+line aux 0
+line vty 0 4
+ login local
+ transport input ssh
+line vty 5 15
+ login local
+ transport input ssh
+!
+!

@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+
+import argparse
+import networkx as nx
+import ipaddress
+import yaml
+import sys
+
+from networkx.drawing.nx_agraph import to_agraph
+from jinja2 import Environment, FileSystemLoader
+
+parser = argparse.ArgumentParser(description='ClosX - Clos Fabric Generator')
+parser.add_argument('-ipr', action="store", dest="ip_range")
+parser.add_argument('-mgmtr', action="store", dest="mgmt_range")
+parser.add_argument('-spine', action="store", dest="spine_size")
+parser.add_argument('-tier2', action="store", dest="tier2_size")
+parser.add_argument('-tier1', action="store", dest="tier1_size")
+parser.add_argument('-vendor', action="store", dest="vendor")
+args = parser.parse_args()
+
+class Clos():
+    def __init__(self, spine_size, tier2_size, tier1_size, ip_range, mgmt_range, vendor):
+        '''
+            Summary:
+            Takes a router list and builds a vars_dict to pass to the associated Jinja template.
+
+            Assigns:
+            self.G: Networkx graph object
+            self.nodes: Dict of lists, keyed by node type, dict example:
+            {
+                'spine_list': ['s1-r1', 's1-r2', 's1-r3', 's1-r4', 's1-r5', 's1-r6', 's1-r7', 's1-r8'], 
+                'tier2_list': ['t2-r1', 't2-r2', 't2-r3', 't2-r4', 't2-r5', 't2-r6', 't2-r7', 't2-r8', 't2-r9', 't2-r10', 't2-r11', 't2-r12', 't2-r13', 't2-r14', 't2-r15', 't2-r16'], 
+                'tier1_list': ['t1-r1', 't1-r2', 't1-r3', 't1-r4', 't1-r5', 't1-r6', 't1-r7', 't1-r8', 't1-r9', 't1-r10', 't1-r11', 't1-r12', 't1-r13', 't1-r14', 't1-r15', 't1-r16']
+            }
+            self.edges: List of edge tuples, list example:
+            [
+                ('s1-r1', 't2-r1'), 
+                ('s1-r1', 't2-r2'), 
+                ('s1-r1', 't2-r3'), 
+                ('s1-r1', 't2-r4'), 
+                ('s1-r1', 't2-r5'), 
+                ('s1-r1', 't2-r6'),
+                ...etc
+            ]
+            self.spine_size: Size of spine as str, always converted to int
+            self.tier2_size: Size of spine as str, always converted to int
+            self.tier1_size: Size of spine as str, always converted to int
+            self.ip_range: IP range to split into /31 subnets as str, always converted to ipnetwork object
+            self.mgmt_range: IP range to split into /32 management IPs as str, always converted to ipnetwork object
+            self.total_nodes: Sum of spine_size, tier2_size and tier1_size as int
+            self.vendor: Vendor template to use for rendering as str
+            self.image_name: Name of the networkx graph object visualisation file as str
+        '''
+        self.G = nx.Graph()
+        self.nodes = {}
+        self.edges = []
+        self.spine_size = spine_size
+        self.tier2_size = tier2_size
+        self.tier1_size = tier1_size
+        self.ip_range = ip_range
+        self.mgmt_range = mgmt_range
+        self.total_nodes = int(spine_size) + int(tier2_size) + int(tier1_size)
+        self.vendor = vendor
+        self.image_name = 'clos.png'
+
+    def build(self):
+        '''
+            Summary:
+            Builds the Clos object. 
+            Populates self.nodes and self.edges based on user provided args.
+            Populates self.G.nodes and self.G.edges with self.nodes and self.edges.
+            Nodes also include /32 IPs for management. Edges also include /31 IPs and port indexes.
+            Topology is drawn and visualised with pygraphviz.
+            Configuration is rendered with YAML and Jinja.
+
+            Takes:
+            self: Clos object
+
+            Produces:
+            Networkx graph object visualisation file.
+            Full Clos fabric configuration.
+        '''
+        self.nodes['spine_list'] = ['s1-r' + str(node + 1) for node in range(int(self.spine_size))]
+        self.nodes['tier2_list'] = ['t2-r' + str(node + 1) for node in range(int(self.tier2_size))]
+        self.nodes['tier1_list'] = ['t1-r' + str(node + 1) for node in range(int(self.tier1_size))]
+
+        mgmt_ips = self.get_mgmt_ips()
+
+        node_index = 0
+        for node_lists, nodes in self.nodes.items():
+            for node in nodes:
+                self.G.add_node(node)
+                self.G.nodes[node]['mgmt_ip'] = str(mgmt_ips[node_index].hosts()[0])
+                node_index +=1
+
+        for spine_router in self.nodes['spine_list']:
+            for tier2_router in self.nodes['tier2_list']:
+                self.edges.append((spine_router, tier2_router))
+                
+        for tier2_router in self.nodes['tier2_list']:
+            for tier1_router in self.nodes['tier1_list']:
+                self.edges.append((tier2_router, tier1_router))
+        
+        p2p_ips = self.get_p2p_ips()
+        port_indexes = self.get_port_indexes()
+
+        edge_index = 0
+        for edge in self.edges:
+            self.G.add_edge(edge[0], edge[1])
+            nx.set_edge_attributes(
+                self.G, 
+                {
+                    (edge[0], edge[1]): 
+                    {'a_end_ip': str(list(p2p_ips[edge_index].hosts())[0]),
+                    'a_end': edge[0], 
+                    'a_end_index': port_indexes[edge_index]['a_end_index'],
+                    'b_end_ip': str(list(p2p_ips[edge_index].hosts())[1]),
+                    'b_end': edge[1],
+                    'b_end_index': port_indexes[edge_index]['b_end_index']}
+                }
+            )
+            edge_index += 1
+
+        print('Drawing topology...')
+        vis = to_agraph(self.G)
+        vis.layout('dot')
+        vis.draw(self.image_name)
+        print(f'Topology drawn, saved as: {self.image_name}')
+        print(f'Rendered {self.total_nodes} Nodes and {len(self.edges)} Edges')
+
+        self.render_config('spine_list')
+        self.render_config('tier2_list')
+        self.render_config('tier1_list')
+
+    def get_p2p_ips(self):
+        '''
+            Summary:
+            Takes an IP range and splits it into /31 subnets.
+            Exits if the number of edges exceeds the number of /31 subnets, prompts user to provide a bigger IP range.
+
+            Takes:
+            self: Clos object
+
+            Returns:
+            p2p_ips: List of /31 subnets
+        '''
+        ips = ipaddress.ip_network(self.ip_range)
+        p2p_ips = list(ips.subnets(new_prefix=31))
+
+        if len(self.edges) > len(p2p_ips):
+            sys.exit(f'Insufficient IP space for allocating required amount of /31s. Edges: {len(self.edges)}, /31s: {len(p2p_ips)}')
+
+        return p2p_ips
+
+    def get_mgmt_ips(self):
+        '''
+            Summary:
+            Takes an IP range and splits it into /32 management IPs.
+            Exits if the number of nodes exceeds the number of /32 management IPs, prompts user to provide a bigger IP range.
+
+            Takes:
+            self: Clos object
+
+            Returns:
+            mgmt_ips: List of /32 management IPs
+        '''
+        ips = ipaddress.ip_network(self.mgmt_range)
+        mgmt_ips = list(ips.subnets(new_prefix=32))
+
+        if self.total_nodes > len(mgmt_ips):
+            sys.exit(f'Insufficient IP space for allocating required amount of /32s. Nodes: {len(self.total_nodes)}, /32s: {len(mgmt_ips)}')
+
+        return mgmt_ips
+
+    def render_config(self, router_list):
+        '''
+            Summary:
+            Takes a list of router names and builds a vars_dict dict for each router in it to pass to the associated Jinja template for rendering.
+            Iterates edges in the networkx graph object to extract edge attributes and add them into vars_dict.
+            Template to render against is matched to self.vendor, provided as an arg at runtime.
+            Configs are written to the configs/ folder named as hostname.conf.
+
+            vars_dict contains:
+                - hostname
+                - mgmt_ip
+                - interfaces: Dict of dicts, keyed by index, containing:
+                    - a_end_ip
+                    - a_end (hostname)
+                    - a_end_index
+                    - b_end_ip
+                    - b_end (hostname)
+                    - b_end_index
+
+            vars_dict dict example: 
+            {
+                'hostname': 's1-r1', 
+                'mgmt_ip': '172.16.0.0',
+                'interfaces': {
+                    0: {'a_end_ip': '10.0.0.0', 'a_end': 's1-r1', 'a_end_index': 24, 'b_end_ip': '10.0.0.1', 'b_end': 't2-r1', 'b_end_index': 0}, 
+                    1: {'a_end_ip': '10.0.0.2', 'a_end': 's1-r1', 'a_end_index': 25, 'b_end_ip': '10.0.0.3', 'b_end': 't2-r2', 'b_end_index': 0}, 
+                    2: {'a_end_ip': '10.0.0.4', 'a_end': 's1-r1', 'a_end_index': 26, 'b_end_ip': '10.0.0.5', 'b_end': 't2-r3', 'b_end_index': 0}, 
+                    3: {'a_end_ip': '10.0.0.6', 'a_end': 's1-r1', 'a_end_index': 27, 'b_end_ip': '10.0.0.7', 'b_end': 't2-r4', 'b_end_index': 0}, 
+                    ...etc
+                }
+            }
+
+            Takes:
+            self: Clos object
+            router_list: Name of router list to render configuration for
+        '''
+        for router in self.nodes[router_list]:
+            index = 0
+            vars_dict = {}
+            vars_dict.update({'hostname': router, 'interfaces': {}})
+
+            for node in self.G.nodes(data=True):
+                if router == node[0]:
+                    vars_dict.update({'mgmt_ip': node[1]['mgmt_ip']})
+
+            for edge in self.G.edges(router, data=True):
+                vars_dict['interfaces'].update({index: edge[2]})
+                index += 1
+
+            template_path = Environment(loader=FileSystemLoader('templates/'), trim_blocks=True, lstrip_blocks=True)
+            template = template_path.get_template(self.vendor + '.j2')
+            rendered_config = template.render(vars_dict)
+
+            config_path = 'configs/' + self.vendor + '/' + router + '.conf'
+
+            with open(config_path, 'w') as configuration:
+                configuration.write(rendered_config)
+
+            print(f'Rendered {config_path}')
+
+    def get_port_indexes(self):
+        '''
+            Summary:
+            Calculates port indexes for both sides of edges in the networkx graph object. The lowest available index is always used.
+            Once used, port indexes are removed from the free_ports uplinks or downlinks list.
+            Design principles of a Clos network define that port radix should be equal north and south.
+            Max amount of uplink or downlink ports is 24.
+
+            free_ports dict example:
+            {
+                's1-r1': {
+                'uplinks': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], 
+                'downlinks': [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46]
+                }
+            }
+
+            Takes:
+            self: Clos object
+
+            Returns:
+            port_indexes: Dict of dicts, keyed by edge index, containing assigned a and b end indexes.
+
+            port_indexes dict example:
+            {
+                0: {'a_end_index': 24, 'b_end_index': 0}, 
+                1: {'a_end_index': 25, 'b_end_index': 0}, 
+                2: {'a_end_index': 26, 'b_end_index': 0}, 
+                3: {'a_end_index': 27, 'b_end_index': 0},
+                ...etc
+            }
+        '''
+        port_indexes = {}
+        free_ports = {}
+
+        for node in self.G.nodes:
+            free_ports.update({node: {'uplinks': [i for i in range(0, 23)], 'downlinks': [i for i in range(24, 47)]}})
+
+        edge_index = 0
+        for edge in self.edges:
+            lowest_available_downlink = min(free_ports[edge[0]]['downlinks'])
+            lowest_available_uplink = min(free_ports[edge[1]]['uplinks'])
+            port_indexes.update({edge_index: {'a_end_index': lowest_available_downlink, 'b_end_index': lowest_available_uplink}})
+            free_ports[edge[0]]['downlinks'].remove(lowest_available_downlink)
+            free_ports[edge[1]]['uplinks'].remove(lowest_available_uplink)
+            edge_index += 1
+
+        return port_indexes
+
+if __name__ == "__main__":
+    Clos = Clos(args.spine_size, args.tier2_size, args.tier1_size, args.ip_range, args.mgmt_range, args.vendor)
+    Clos.build()
