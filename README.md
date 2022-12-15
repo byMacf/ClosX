@@ -15,6 +15,10 @@
     -ipr: IP range to extract /31 p2p IPs from
     -mgmtr: IP range to extract /32 management IPs from
     -vendor: vendor template to render configuration against
+
+  Currently supported vendor platforms:
+    - Junos
+    - Cisco IOS
 ```
 ## 3 Tier Clos Example - 6 wide spine | 10 wide tier 2 | 10 wide tier 1
 ![3 Tier Clos - 6 wide spine | 10 wide tier 2 | 10 wide tier 1](https://github.com/byMacf/ClosX/blob/main/6widespine_10widetier2_10widetier1_clos.png?raw=true)
