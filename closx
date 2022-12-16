@@ -9,7 +9,7 @@ import sys
 from networkx.drawing.nx_agraph import to_agraph
 from jinja2 import Environment, FileSystemLoader
 
-parser = argparse.ArgumentParser(description='ClosX - Clos Fabric Generator')
+parser = argparse.ArgumentParser(description='ClosX - Clos Network Generator')
 parser.add_argument('-ipr', action="store", dest="ip_range")
 parser.add_argument('-mgmtr', action="store", dest="mgmt_range")
 parser.add_argument('-spine', action="store", dest="spine_size")
@@ -78,7 +78,7 @@ class Clos():
 
             Produces:
             Networkx graph object visualisation file.
-            Full Clos fabric configuration.
+            Full Clos network configuration.
         '''
         self.nodes['spine_list'] = ['s1-r' + str(node + 1) for node in range(int(self.spine_size))]
         self.nodes['tier2_list'] = ['t2-r' + str(node + 1) for node in range(int(self.tier2_size))]

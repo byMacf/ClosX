@@ -2,7 +2,7 @@
 
 ## Command Line Operation
 ```
-  3 Tier Clos Fabric Generator
+  3 Tier Clos Network Generator
   Example usage:
   $ cd ClosX
   $ chmod +x closx
