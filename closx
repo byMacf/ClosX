@@ -264,6 +264,9 @@ class Clos():
                 ...etc
             }
         '''
+        if int(self.spine_size) > 24 or int(self.tier2_size) > 24 or int(self.tier1_size) > 24:
+            sys.exit('Amount of required port indexes exceeds free port indexes, decrease the size of spine/tier2/tier1 if they exceed 24')
+        
         allocated_port_indexes = {}
         free_port_indexes = {}
 
@@ -272,9 +275,6 @@ class Clos():
 
         edge_index = 0
         for edge in self.edges:
-            if int(self.spine_size) > 24 or int(self.tier2_size) > 24 or int(self.tier1_size) > 24:
-                sys.exit('Amount of required port indexes exceeds free port indexes, decrease the size of spine/tier2/tier1 if they exceed 24')
-
             lowest_available_downlink = min(free_port_indexes[edge[0]]['downlinks'])
             lowest_available_uplink = min(free_port_indexes[edge[1]]['uplinks'])
             allocated_port_indexes.update({edge_index: {'a_end_index': lowest_available_downlink, 'b_end_index': lowest_available_uplink}})
