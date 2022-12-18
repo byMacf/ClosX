@@ -209,7 +209,6 @@ class Clos():
             router_list: Name of router list to render configuration for
         '''
         for router in self.nodes[router_list]:
-            index = 0
             vars_dict = {}
             vars_dict.update({'hostname': router, 'interfaces': {}})
 
@@ -217,9 +216,10 @@ class Clos():
                 if router == node[0]:
                     vars_dict.update({'mgmt_ip': node[1]['mgmt_ip']})
 
+            edge_index = 0
             for edge in self.G.edges(router, data=True):
-                vars_dict['interfaces'].update({index: edge[2]})
-                index += 1
+                vars_dict['interfaces'].update({edge_index: edge[2]})
+                edge_index += 1
 
             template_path = Environment(loader=FileSystemLoader('templates/'), trim_blocks=True, lstrip_blocks=True)
             template = template_path.get_template(self.vendor + '.j2')
@@ -243,8 +243,8 @@ class Clos():
             free_ports dict example:
             {
                 's1-r1': {
-                'uplinks': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], 
-                'downlinks': [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46]
+                'uplinks': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], 
+                'downlinks': [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
                 }
             }
 
@@ -267,7 +267,7 @@ class Clos():
         free_ports = {}
 
         for node in self.G.nodes:
-            free_ports.update({node: {'uplinks': [i for i in range(0, 23)], 'downlinks': [i for i in range(24, 47)]}})
+            free_ports.update({node: {'uplinks': [i for i in range(0, 24)], 'downlinks': [i for i in range(24, 48)]}})
 
         edge_index = 0
         for edge in self.edges:
