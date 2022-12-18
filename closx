@@ -148,7 +148,7 @@ class Clos():
         p2p_ips = list(ips.subnets(new_prefix=31))
 
         if len(self.edges) > len(p2p_ips):
-            sys.exit(f'Insufficient IP space for allocating required amount of /31s. Edges: {len(self.edges)}, /31s: {len(p2p_ips)}')
+            sys.exit(f'Insufficient IP space for allocating required amount of /31s. Edges: {len(self.edges)}, /31s: {len(p2p_ips)}, provide a bigger IP range')
 
         return p2p_ips
 
@@ -168,7 +168,7 @@ class Clos():
         mgmt_ips = list(ips.subnets(new_prefix=32))
 
         if self.total_nodes > len(mgmt_ips):
-            sys.exit(f'Insufficient IP space for allocating required amount of /32s. Nodes: {len(self.total_nodes)}, /32s: {len(mgmt_ips)}')
+            sys.exit(f'Insufficient IP space for allocating required amount of /32s. Nodes: {len(self.total_nodes)}, /32s: {len(mgmt_ips)}, provide a bigger mgmt IP range')
 
         return mgmt_ips
 
@@ -239,6 +239,7 @@ class Clos():
             Once used, port indexes are removed from the free_ports uplinks or downlinks list.
             Design principles of a Clos network define that port radix should be equal north and south.
             Max amount of uplink or downlink ports is 24.
+            Exits if the number of port indexes required exceed the max, prompts user to reduce spine, tier2 or tier1 size.
 
             free_ports dict example:
             {
@@ -263,29 +264,25 @@ class Clos():
                 ...etc
             }
         '''
-        port_indexes = {}
-        free_ports = {}
+        allocated_port_indexes = {}
+        free_port_indexes = {}
 
         for node in self.G.nodes:
-            free_ports.update({node: {'uplinks': [i for i in range(0, 24)], 'downlinks': [i for i in range(24, 48)]}})
+            free_port_indexes.update({node: {'uplinks': [i for i in range(0, 24)], 'downlinks': [i for i in range(24, 48)]}})
 
         edge_index = 0
         for edge in self.edges:
-            try:
-                lowest_available_downlink = min(free_ports[edge[0]]['downlinks'])
-            except ValueError:
-                sys.exit('Insufficient port indexes for allocating required amount of downlinks')
-            try:
-                lowest_available_uplink = min(free_ports[edge[1]]['uplinks'])
-            except ValueError:
-                sys.exit('Insufficient port indexes for allocating required amount of uplinks')
-                
-            port_indexes.update({edge_index: {'a_end_index': lowest_available_downlink, 'b_end_index': lowest_available_uplink}})
-            free_ports[edge[0]]['downlinks'].remove(lowest_available_downlink)
-            free_ports[edge[1]]['uplinks'].remove(lowest_available_uplink)
+            if int(self.spine_size) > 24 or int(self.tier2_size) > 24 or int(self.tier1_size) > 24:
+                sys.exit('Amount of required port indexes exceeds free port indexes, decrease the size of spine/tier2/tier1 if they exceed 24')
+
+            lowest_available_downlink = min(free_port_indexes[edge[0]]['downlinks'])
+            lowest_available_uplink = min(free_port_indexes[edge[1]]['uplinks'])
+            allocated_port_indexes.update({edge_index: {'a_end_index': lowest_available_downlink, 'b_end_index': lowest_available_uplink}})
+            free_port_indexes[edge[0]]['downlinks'].remove(lowest_available_downlink)
+            free_port_indexes[edge[1]]['uplinks'].remove(lowest_available_uplink)
             edge_index += 1
 
-        return port_indexes
+        return allocated_port_indexes
 
 if __name__ == "__main__":
     Clos = Clos(args.spine_size, args.tier2_size, args.tier1_size, args.ip_range, args.mgmt_range, args.vendor)
