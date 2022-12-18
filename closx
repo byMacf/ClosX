@@ -271,8 +271,15 @@ class Clos():
 
         edge_index = 0
         for edge in self.edges:
-            lowest_available_downlink = min(free_ports[edge[0]]['downlinks'])
-            lowest_available_uplink = min(free_ports[edge[1]]['uplinks'])
+            try:
+                lowest_available_downlink = min(free_ports[edge[0]]['downlinks'])
+            except ValueError:
+                sys.exit('Insufficient port indexes for allocating required amount of downlinks')
+            try:
+                lowest_available_uplink = min(free_ports[edge[1]]['uplinks'])
+            except ValueError:
+                sys.exit('Insufficient port indexes for allocating required amount of uplinks')
+                
             port_indexes.update({edge_index: {'a_end_index': lowest_available_downlink, 'b_end_index': lowest_available_uplink}})
             free_ports[edge[0]]['downlinks'].remove(lowest_available_downlink)
             free_ports[edge[1]]['uplinks'].remove(lowest_available_uplink)
