@@ -43,8 +43,8 @@ class Clos():
                 ...etc
             ]
             self.spine_size: Size of spine as str, always converted to int
-            self.tier2_size: Size of spine as str, always converted to int
-            self.tier1_size: Size of spine as str, always converted to int
+            self.tier2_size: Size of tier2 as str, always converted to int
+            self.tier1_size: Size of tier1 as str, always converted to int
             self.ip_range: IP range to split into /31 subnets as str, always converted to ipnetwork object
             self.mgmt_range: IP range to split into /32 management IPs as str, always converted to ipnetwork object
             self.total_nodes: Sum of spine_size, tier2_size and tier1_size as int
